@@ -34,7 +34,11 @@ translate.addEventListener('click',async()=>{
     const results=await FrenchTranslator.translateTasks(plan.tasks,(done,total)=>{status.textContent=`Translating ${done} of ${total}…`;},signal);
     if(signal.aborted) throw new DOMException('Cancelled','AbortError');
     const result=await call(tabId,'apply',{generation:plan.generation,results});
-    status.textContent=result.stale?'The page changed while translating. Click Translate this page again.':`${result.words} word glosses · ${result.sentences} sentence translations${plan.limited?' · Page limit reached; some text was skipped.':''}`;
+    const notes=[];
+    if(plan.limited) notes.push('Page limit reached; some text was skipped.');
+    if(results.failed) notes.push(`${results.failed} could not be translated.`);
+    if(result.skipped) notes.push(`${result.skipped} sentences changed on the page and were skipped.`);
+    status.textContent=result.stale?'The page changed while translating. Click Translate this page again.':[`${result.words} word glosses · ${result.sentences} sentence translations`,...notes].join(' · ');
     await chrome.storage.local.set({translationMode:mode.value});
   }catch(error){fail(error);}finally{setBusy(false);}
 });

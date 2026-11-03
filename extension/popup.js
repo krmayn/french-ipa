@@ -3,15 +3,30 @@ const status = document.querySelector('#status');
 let tabId, current = { enabled: false, position: 'above' };
 function render() {
   document.querySelector(`input[value="${current.position}"]`).checked = true;
-  document.querySelectorAll('.fripa-word').forEach(node => node.dataset.fripaPosition = current.position);
+  document.querySelectorAll('.fripa-word').forEach(node => FrenchIPA.setPosition(node, current.position));
   button.textContent = current.enabled ? 'Hide IPA on this page' : 'Show IPA on this page';
   status.textContent = current.enabled ? `${current.count} words annotated` : 'Ready for this page';
+}
+let font;
+async function fontData() {
+  if (font === undefined) {
+    try {
+      const bytes = new Uint8Array(await (await fetch('fonts/french-ipa-phonetic.woff2')).arrayBuffer());
+      let binary = '';
+      for (let i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+      font = btoa(binary);
+    } catch { font = null; }
+  }
+  return font;
 }
 async function apply(enabled) {
   button.disabled = true;
   try {
     const options = { enabled, position: current.position };
-    if (enabled) options.dictionary = await (await fetch('data/fr_FR.txt')).text();
+    if (enabled) {
+      options.dictionary = await (await fetch('data/fr_FR.txt')).text();
+      options.font = await fontData();
+    }
     const [result] = await chrome.scripting.executeScript({ target: { tabId }, func: options => globalThis.FrenchIPAController.set(options), args: [options] });
     current = result.result;
     await chrome.storage.local.set({ position: current.position });
