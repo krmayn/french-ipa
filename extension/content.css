@@ -1,3 +1,6 @@
 ruby.fripa-word { ruby-position: over !important; ruby-align: center !important; white-space: nowrap !important; }
 ruby.fripa-word[data-fripa-position="below"] { ruby-position: under !important; }
 ruby.fripa-word > rt { font-family: "Segoe UI", "DejaVu Sans", Arial, sans-serif !important; font-size: 0.58em !important; font-weight: 400 !important; font-style: normal !important; line-height: 1.25 !important; letter-spacing: 0 !important; text-transform: none !important; color: inherit !important; opacity: 0.76; user-select: none; }
+span.fripa-interlinear { display: inline-flex !important; flex-direction: column !important; vertical-align: baseline !important; text-align: center !important; white-space: nowrap !important; line-height: 1.3 !important; }
+span.fripa-gloss { display: block !important; font: 400 0.58em/1.35 "Segoe UI", "DejaVu Sans", Arial, sans-serif !important; color: inherit !important; opacity: .8; text-decoration: none !important; white-space: normal !important; max-width: 16em; }
+span.fripa-translation { display: block !important; font: 400 0.85em/1.5 "Segoe UI", "DejaVu Sans", Arial, sans-serif !important; color: inherit !important; opacity: .85; padding: .3em 0 .65em !important; text-decoration: none !important; white-space: normal !important; }

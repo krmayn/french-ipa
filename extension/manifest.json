@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
   "name": "French IPA",
-  "version": "0.1.1",
-  "description": "Read French with offline IPA above or below each word.",
+  "version": "0.2.0",
+  "description": "Read French with IPA above or below words, plus on-device English word glosses and sentence translations.",
   "permissions": [
     "activeTab",
     "scripting",
-    "storage"
+    "storage",
+    "sidePanel"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -24,5 +25,9 @@
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
   },
-  "homepage_url": "https://github.com/krmayn/french-ipa"
+  "homepage_url": "https://github.com/krmayn/french-ipa",
+  "minimum_chrome_version": "138",
+  "side_panel": {
+    "default_path": "panel.html"
+  }
 }

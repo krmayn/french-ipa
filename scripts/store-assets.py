@@ -19,4 +19,4 @@ d.text((220,150),'bɔ̃ʒuʁ',font=ImageFont.truetype(font,20),anchor='mm',fill=
 d.text((220,191),'Bonjour',font=ImageFont.truetype(font,34),anchor='mm',fill='#17313f')
 d.text((30,245),'IPA above or below • Works offline',font=ImageFont.truetype(font,16),fill='#506675')
 im.save(root/'store/promo-440x280.png')
-p=root/'extension/manifest.json';m=json.loads(p.read_text());m['version']='0.1.1';m['icons']={str(n):f'icons/icon-{n}.png' for n in [16,32,48,128]};m['action']['default_icon']=m['icons'];m['homepage_url']='https://github.com/krmayn/french-ipa';p.write_text(json.dumps(m,indent=2)+'\n')
+p=root/'extension/manifest.json';m=json.loads(p.read_text());m['icons']={str(n):f'icons/icon-{n}.png' for n in [16,32,48,128]};m['action']['default_icon']=m['icons'];m['homepage_url']='https://github.com/krmayn/french-ipa';p.write_text(json.dumps(m,indent=2)+'\n')

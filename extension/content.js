@@ -1,7 +1,7 @@
 (() => {
   if (globalThis.FrenchIPAController) return;
   let enabled = false, position = 'above', dictionary, observer, timer;
-  const skip = 'script,style,noscript,textarea,input,select,option,pre,code,kbd,samp,svg,math,ruby,[contenteditable]:not([contenteditable="false"]),[role="textbox"],[hidden],[aria-hidden="true"],[data-fripa-ignore]';
+  const skip = '.fripa-gloss,.fripa-translation,script,style,noscript,textarea,input,select,option,pre,code,kbd,samp,svg,math,ruby,[contenteditable]:not([contenteditable="false"]),[role="textbox"],[hidden],[aria-hidden="true"],[data-fripa-ignore]';
   function eligible(node) {
     const parent = node.parentElement;
     if (!parent || parent.closest(skip) || parent.isContentEditable || !node.textContent.trim()) return false;
@@ -36,8 +36,8 @@
       observer?.disconnect();
       document.querySelectorAll('ruby.fripa-word').forEach(node => {
         const parent = node.parentNode;
-        const text = [...node.childNodes].filter(child => child.nodeName !== 'RT').map(child => child.textContent).join('');
-        node.replaceWith(document.createTextNode(text));
+        const source = [...node.childNodes].filter(child => child.nodeName !== 'RT');
+        node.replaceWith(...source);
         parent.normalize();
       });
     }

@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>French IPA · English translations</title><link rel="stylesheet" href="ui.css"><body class="panel">
+<header><span class="mark">/ʁ/</span><div><h1>Read with English</h1><p>French IPA · Interlinear translations</p></div></header>
+<p>Keep the French on the page and add English underneath.</p>
+<label for="mode">English translation</label><select id="mode"><option value="words">Word glosses</option><option value="sentences">Sentence translations</option><option value="both" selected>Both</option></select>
+<p class="note">Word glosses translate words in isolation and may miss their meaning in context. Sentence translations use the full sentence.</p>
+<button id="enable" disabled>Checking translation support…</button><p id="model-status" role="status"></p>
+<button id="translate" disabled>Translate this page</button><button id="cancel" class="secondary" hidden>Cancel</button><button id="clear" class="secondary">Remove English</button>
+<p id="translation-status" role="status" aria-live="polite"></p>
+<p class="note">Translation runs on your computer. Chrome may download a French–English language pack on first use. Keep this panel open until translation finishes.</p>
+<p class="note">Use the extension popup to show or hide IPA and choose Above or Below. Reapply translations after a page changes. Up to 2,000 words and 200 sentences per run.</p>
+<script src="translator.js"></script><script src="panel.js"></script></body></html>

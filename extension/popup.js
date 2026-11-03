@@ -42,3 +42,8 @@ document.querySelectorAll('input[name="position"]').forEach(input => input.addEv
     status.textContent = 'Chrome settings, the Web Store and built-in PDF pages cannot be annotated.';
   }
 })();
+
+document.querySelector('#translations').addEventListener('click', async () => {
+  try { await chrome.sidePanel.open({tabId}); window.close(); }
+  catch { status.textContent='Open a regular web page, then reopen the extension to use English translations.'; }
+});
