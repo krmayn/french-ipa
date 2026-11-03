@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "French IPA",
+  "version": "0.1.0",
+  "description": "Read French with offline IPA above or below each word.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "French IPA"
+  }
+}
