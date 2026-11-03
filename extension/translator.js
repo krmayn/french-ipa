@@ -15,14 +15,24 @@
     }}).then(value=>{translator=value;return value;}).finally(()=>{creating=null;});
     return creating;
   }
+  // One failed text (for example a sentence the model rejects) is skipped instead of discarding
+  // the whole run; the run fails only if nothing could be translated.
   async function translateTasks(tasks, onProgress, signal) {
     if (!translator) throw new Error('Enable English translations first.');
-    const results=[];
+    const results=[];let firstError,done=0;
     for (const task of tasks) {
       if (signal.aborted) throw new DOMException('Translation cancelled.','AbortError');
-      const text=await translator.translate(task.text,{signal});
-      results.push({id:task.id,text});onProgress(results.length,tasks.length);
+      try {
+        const text=await translator.translate(task.text,{signal});
+        if (typeof text==='string' && text.trim()) results.push({id:task.id,text:text.trim()});
+      } catch(error) {
+        if (error?.name==='AbortError' || signal.aborted) throw new DOMException('Translation cancelled.','AbortError');
+        firstError ||= error;
+      }
+      onProgress(++done,tasks.length);
     }
+    if (!results.length && firstError) throw firstError;
+    results.failed=tasks.length-results.length;
     return results;
   }
   globalThis.FrenchTranslator={availability,create,translateTasks};

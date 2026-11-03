@@ -63,3 +63,57 @@ test('unsupported browsers and model failures are reported without silent fallba
  const results=await w.FrenchTranslator.translateTasks([{id:'1',text:'bonjour'}],()=>{},new w.AbortController().signal);
  assert.equal(results[0].text,'hello');dom.window.close();
 });
+const dict='bonjour\t/bɔ̃ʒuʁ/\nmon\t/mɔ̃/\nami\t/ami/\nle\t/lə/\nsoleil\t/sɔlɛj/\nbrille\t/bʁij/';
+function order(doc){
+ // Visual reading order of each glossed word: French, IPA, English (top to bottom when IPA is below).
+ return [...doc.querySelectorAll('.fripa-interlinear')].map(w=>[...w.querySelectorAll('.fripa-base,.fripa-ipa,.fripa-gloss')].map(n=>n.className.replace('fripa-','')).join('>'));
+}
+test('IPA below sits between the French word and its English gloss, whichever is applied first',()=>{
+ for(const ipaFirst of [true,false]){
+  const dom=setup('<p>Bonjour mon ami.</p>'),w=dom.window,doc=w.document;
+  const ipa=()=>w.FrenchIPAController.set({enabled:true,position:'below',dictionary:dict});
+  if(ipaFirst)ipa();
+  const plan=w.FrenchInterlinear.prepare('words');w.FrenchInterlinear.apply(answer(plan));
+  if(!ipaFirst)ipa();
+  assert.deepEqual(order(doc),['base>ipa>gloss','base>ipa>gloss','base>ipa>gloss'],`ipaFirst=${ipaFirst}`);
+  w.FrenchIPAController.set({enabled:true,position:'above'});
+  assert.deepEqual(order(doc),['ipa>base>gloss','ipa>base>gloss','ipa>base>gloss']);
+  w.FrenchInterlinear.clear();w.FrenchIPAController.set({enabled:false});
+  assert.equal(doc.body.innerHTML,'<p>Bonjour mon ami.</p>');dom.window.close();
+ }
+});
+test('sentences ignore source line breaks, break at <br> and nested blocks, and exclude IPA text',()=>{
+ const dom=setup('<div>Le soleil\n   brille <em>fort</em> aujourd’hui.<br>Une ligne<p>Un bloc.</p>La suite.</div>'),w=dom.window;
+ w.FrenchIPAController.set({enabled:true,dictionary:dict});
+ const plan=w.FrenchInterlinear.prepare('sentences');
+ assert.deepEqual(Array.from(plan.tasks,t=>t.text),['Le soleil brille fort aujourd’hui.','Une ligne','Un bloc.','La suite.']);dom.window.close();
+});
+test('sentence lines go after inline markup instead of splitting links or IPA words',()=>{
+ const dom=setup('<p>Bonjour <a href="/x">mon ami.</a> Le soleil brille</p>'),w=dom.window,doc=w.document;
+ w.FrenchIPAController.set({enabled:true,position:'below',dictionary:dict});
+ const link=doc.querySelector('a'),plan=w.FrenchInterlinear.prepare('both');
+ const result=w.FrenchInterlinear.apply(answer(plan));
+ assert.equal(result.sentences,2);
+ assert.equal(doc.querySelectorAll('a .fripa-translation,.fripa-word .fripa-translation,.fripa-interlinear .fripa-translation').length,0);
+ const lines=[...doc.querySelectorAll('.fripa-translation')];
+ assert.equal(lines[0].previousElementSibling,link);assert.equal(lines[0].parentElement,doc.querySelector('p'));
+ assert.equal(lines[1].nextSibling,null);assert.equal(lines[1].textContent,'English: Le soleil brille');
+ assert.equal(doc.querySelector('a'),link);
+ w.FrenchInterlinear.clear();w.FrenchIPAController.set({enabled:false});
+ assert.equal(doc.body.innerHTML,'<p>Bonjour <a href="/x">mon ami.</a> Le soleil brille</p>');dom.window.close();
+});
+test('a sentence that changes during translation is skipped without discarding the others',()=>{
+ const dom=setup('<p>Bonjour mon ami.</p><p id="live">Il est midi.</p>'),w=dom.window,doc=w.document;
+ const plan=w.FrenchInterlinear.prepare('sentences');doc.querySelector('#live').textContent='Il est treize heures.';
+ const result=w.FrenchInterlinear.apply(answer(plan));
+ assert.equal(result.stale,undefined);assert.equal(result.sentences,1);assert.equal(result.skipped,1);
+ assert.equal(doc.querySelector('.fripa-translation').textContent,'English: Bonjour mon ami.');dom.window.close();
+});
+test('one failed translation is skipped; the run fails only when nothing translates',async()=>{
+ const dom=setup(''),w=dom.window;
+ w.Translator={create:async()=>({translate:async(text)=>{if(text==='bad')throw new Error('nope');return 'EN '+text;}})};
+ w.eval(readFileSync('extension/translator.js','utf8'));await w.FrenchTranslator.create();
+ const results=await w.FrenchTranslator.translateTasks([{id:'0',text:'bad'},{id:'1',text:'ami'}],()=>{},new w.AbortController().signal);
+ assert.deepEqual(Array.from(results,r=>r.id),['1']);assert.equal(results.failed,1);
+ await assert.rejects(()=>w.FrenchTranslator.translateTasks([{id:'0',text:'bad'}],()=>{},new w.AbortController().signal),/nope/);dom.window.close();
+});

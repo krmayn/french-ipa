@@ -21,28 +21,48 @@
     }
     return null;
   }
+  // Each word is an inline-block with two block lines (IPA and the French word) instead of
+  // <ruby>/<rt>, so the extension, not UA ruby rules or page `rt` styles, controls the IPA font,
+  // size and line spacing (see content.css for the tilde fix). It also lets a word gloss wrap the
+  // whole word, keeping IPA between French and English when IPA is below. DOM order follows the
+  // visual order so CSS baseline-source keeps the French word on the page baseline.
+  function setPosition(word, position) {
+    const below = position === 'below';
+    word.dataset.fripaPosition = below ? 'below' : 'above';
+    const ipa = word.querySelector(':scope > .fripa-ipa'), base = word.querySelector(':scope > .fripa-base');
+    if (ipa && base) below ? base.after(ipa) : base.before(ipa);
+  }
   function annotateText(text, dict, doc, position) {
     const fragment = doc.createDocumentFragment();
     let last = 0, count = 0;
     for (const match of text.matchAll(token)) {
       const ipa = lookup(match[0], dict);
       if (!ipa) continue;
-      fragment.append(text.slice(last, match.index));
-      const ruby = doc.createElement('ruby');
-      ruby.className = 'fripa-word';
-      ruby.dataset.fripaPosition = position;
-      ruby.append(doc.createTextNode(match[0]));
-      const rt = doc.createElement('rt');
-      rt.setAttribute('aria-hidden', 'true');
-      rt.textContent = ipa.replaceAll('/', '');
-      ruby.title = `${match[0]} ${ipa}`;
-      ruby.append(rt);
-      fragment.append(ruby);
+      if (match.index > last) fragment.append(text.slice(last, match.index));
+      const word = doc.createElement('span');
+      word.className = 'fripa-word';
+      word.title = `${match[0]} ${ipa}`;
+      const base = doc.createElement('span');
+      base.className = 'fripa-base';
+      base.append(doc.createTextNode(match[0]));
+      const mark = doc.createElement('span');
+      mark.className = 'fripa-ipa';
+      mark.setAttribute('aria-hidden', 'true');
+      mark.lang = 'fr-fonipa';
+      mark.setAttribute('translate', 'no');
+      mark.textContent = ipa.replaceAll('/', '').normalize('NFC');
+      word.append(mark, base);
+      setPosition(word, position);
+      fragment.append(word);
       last = match.index + match[0].length;
       count++;
     }
-    fragment.append(text.slice(last));
+    if (last < text.length) fragment.append(text.slice(last));
     return { fragment, count };
   }
-  globalThis.FrenchIPA = { parse, lookup, annotateText };
+  function removeWord(word) {
+    const base = word.querySelector(':scope > .fripa-base');
+    word.replaceWith(...(base ? base.childNodes : []));
+  }
+  globalThis.FrenchIPA = { parse, lookup, annotateText, setPosition, removeWord };
 })();

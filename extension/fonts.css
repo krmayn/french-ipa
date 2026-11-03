@@ -1,0 +1,2 @@
+/* Extension pages load the bundled IPA font directly; web pages get it from content.js. */
+@font-face { font-family: "French IPA Phonetic"; src: url("fonts/french-ipa-phonetic.woff2") format("woff2"); font-style: normal; font-weight: 400; font-display: swap; }
