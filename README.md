@@ -6,7 +6,7 @@ A Chrome extension that places IPA **above or below French words**, with a live 
 
 ## Install
 
-1. Download `french-ipa-0.1.0.zip` from [Releases](../../releases/latest) and extract it.
+1. Download `french-ipa-0.1.1.zip` from [Releases](../../releases/latest) and extract it.
 2. Open `chrome://extensions`, enable **Developer mode**, and choose **Load unpacked**.
 3. Select the extracted folder containing `manifest.json`.
 4. Open a French web page, click **French IPA** in the extensions menu, and choose **Show IPA on this page**.

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "French IPA",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Read French with offline IPA above or below each word.",
   "permissions": [
     "activeTab",
@@ -10,6 +10,19 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "French IPA"
-  }
+    "default_title": "French IPA",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "homepage_url": "https://github.com/krmayn/french-ipa"
 }
