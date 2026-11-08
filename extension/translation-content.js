@@ -30,11 +30,28 @@
       if (!tasks.has(text)) tasks.set(text, String(tasks.size));
       return tasks.get(text);
     }
+    // Read French context across inline markup and IPA wrappers, excluding annotations.
+    const contextByNode = new Map(), blocks = new Map();
+    for (const node of nodes) {
+      const block = node.parentElement.closest('p,li,h1,h2,h3,h4,h5,h6,blockquote,td,th,figcaption,div,section,article,main,body');
+      if (!blocks.has(block)) blocks.set(block, {text:''});
+      const context = blocks.get(block);
+      contextByNode.set(node, {context, offset:context.text.length});
+      context.text += node.textContent;
+    }
+    function contextualGloss(node, match) {
+      if (match[0].normalize('NFC').toLocaleLowerCase('fr') !== 'été') return null;
+      const {context, offset} = contextByNode.get(node);
+      const before = context.text.slice(0, offset + match.index).normalize('NFC').toLocaleLowerCase('fr');
+      // Compound tenses: a été, n'ont jamais été, aurait déjà été, etc.
+      const auxiliary = /(?:^|[^\p{L}\p{M}])(?:ai|as|a|avons|avez|ont|avais|avait|avions|aviez|avaient|eus|eut|eûmes|eûtes|eurent|aurai|auras|aura|aurons|aurez|auront|aurais|aurait|aurions|auriez|auraient|aie|aies|ait|ayons|ayez|aient|eusse|eusses|eût|eussions|eussiez|eussent|avoir|ayant)(?:\s+(?:pas|plus|jamais|déjà|toujours|souvent|rarement|bien|mal|encore|vraiment|probablement|certainement|peut-être|aussi|seulement|longtemps))*\s+$/u;
+      return auxiliary.test(before) ? 'been' : null;
+    }
     if (mode !== 'sentences') {
       for (const node of nodes) {
         const matches = [...node.textContent.matchAll(wordPattern)];
         if (words.length + matches.length > 2000) { limited = true; break; }
-        for (const m of matches) words.push({node,start:m.index,end:m.index+m[0].length,source:m[0],task:task(m[0])});
+        for (const m of matches) words.push({node,start:m.index,end:m.index+m[0].length,source:m[0],gloss:contextualGloss(node,m),task:task(m[0])});
       }
     }
     if (mode !== 'words') {
@@ -46,27 +63,16 @@
         groups.get(block).push(node);
       }
       const segmenter = new Intl.Segmenter('fr',{granularity:'sentence'});
-      for (const group of groups.values()) {
+      for (const [block, group] of groups) {
         const text = group.map(n=>n.textContent).join('');
         if (!text.trim()) continue;
         for (const part of segmenter.segment(text)) {
           if (sentences.length >= 200) { limited = true; break; }
           const source = part.segment.trim();
           if (!source || source.length > 4000) { limited = true; continue; }
-          const end = part.index + part.segment.trimEnd().length;
-          let offset = 0;
-          for (const node of group) {
-            if (offset + node.length >= end) {
-              sentences.push({node,offset:end-offset,source,task:task(source)}); break;
-            }
-            offset += node.length;
-          }
+          sentences.push({block,source,task:task(source)});
         }
       }
-    }
-    // Live ranges keep sentence anchors valid when word annotations split text nodes.
-    for (const item of sentences) {
-      item.range = document.createRange(); item.range.setStart(item.node,item.offset); item.range.collapse(true);
     }
     pending = {generation, words, sentences, originals:new Map(nodes.map(n=>[n,n.textContent]))};
     return {generation, limited, words:words.length, sentences:sentences.length, tasks:[...tasks].map(([text,id])=>({id,text}))};
@@ -77,26 +83,40 @@
     for (const [node,text] of pending.originals) if (!node.isConnected || node.textContent !== text) { clear(); return {stale:true}; }
     const answers = new Map(batch.results.map(r=>[String(r.id),String(r.text).slice(0,12000)]));
     let sentenceCount = 0, wordCount = 0;
-    // Insert sentence lines first, from the end; original source nodes and inline elements survive.
-    for (const item of [...pending.sentences].reverse()) {
+    // Keep sentence translations outside word and IPA wrappers, below their paragraph.
+    for (const item of pending.sentences) {
       if (!answers.has(item.task)) continue;
       const line = document.createElement('span'); line.className='fripa-translation'; line.lang='en';
       line.dataset.fripaIgnore=''; line.textContent=answers.get(item.task);
-      item.range.insertNode(line); sentenceCount++;
+      line.title=item.source;
+      item.block.append(line); sentenceCount++;
     }
-    // Rewalk after range insertions because they split text nodes. Match by source token.
-    const wordAnswers = new Map(pending.words.filter(w=>answers.has(w.task)).map(w=>[w.source,answers.get(w.task)]));
-    if (pending.words.length) for (const node of textNodes(document.body)) {
-      const matches=[...node.textContent.matchAll(wordPattern)];
-      for (const match of matches.reverse()) {
-        if (!wordAnswers.has(match[0]) || wordCount >= 2000) continue;
-        const range=document.createRange();range.setStart(node,match.index);range.setEnd(node,match.index+match[0].length);
-        const wrapper=document.createElement('span'); wrapper.className='fripa-interlinear';
+    // Match occurrences in document order, so identical words can have different glosses.
+    const occurrences = [];
+    for (const node of textNodes(document.body)) {
+      for (const match of node.textContent.matchAll(wordPattern)) occurrences.push({node,match});
+    }
+    for (let i = pending.words.length - 1; i >= 0; i--) {
+      const word = pending.words[i], occurrence = occurrences[i];
+      if (!occurrence || occurrence.match[0] !== word.source) continue;
+      const answer = word.gloss ?? answers.get(word.task);
+      if (answer == null) continue;
+      const {node, match} = occurrence;
+      const range=document.createRange();range.setStart(node,match.index);range.setEnd(node,match.index+match[0].length);
+      const wrapper=document.createElement('span'); wrapper.className='fripa-interlinear';
+      const ruby = node.parentElement.closest('ruby.fripa-word');
+      const wholeIPAWord = ruby && node.parentElement === ruby && match.index === 0 && match[0] === node.textContent;
+      if (wholeIPAWord) {
+        ruby.replaceWith(wrapper);
+        wrapper.append(ruby);
+      } else {
         wrapper.append(range.extractContents());
-        const gloss=document.createElement('span');gloss.className='fripa-gloss';gloss.lang='en';gloss.dataset.fripaIgnore='';
-        gloss.textContent=wordAnswers.get(match[0]);gloss.title='Word translated in isolation; context may change the meaning.';
-        wrapper.append(gloss);range.insertNode(wrapper);wordCount++;
+        range.insertNode(wrapper);
       }
+      const gloss=document.createElement('span');gloss.className='fripa-gloss';gloss.lang='en';gloss.dataset.fripaIgnore='';
+      gloss.textContent=answer;
+      gloss.title=word.gloss ? 'Meaning selected from the surrounding French grammar.' : 'Word translated in isolation; context may change the meaning.';
+      wrapper.append(gloss);wordCount++;
     }
     pending = null;
     return {words:wordCount,sentences:sentenceCount};

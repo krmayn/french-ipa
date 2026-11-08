@@ -15,7 +15,7 @@ test('dictionary handles accents, case, apostrophes, variants and unknown words'
   assert.equal(engine.lookup('BONJOUR', dict), '/bɔ̃ʒuʁ/');
   assert.equal(engine.lookup('e\u0301cole', dict), engine.lookup('école', dict));
   assert.equal(engine.lookup('l’ami', dict), '/lami/');
-  assert.ok(engine.lookup('est', dict).includes(','));
+  assert.equal(engine.lookup('est', dict), '/ɛst/');
   assert.equal(engine.lookup('zzzzzzzzzzz', dict), null);
   dom.window.close();
 });

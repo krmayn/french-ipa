@@ -4,3 +4,47 @@ ruby.fripa-word > rt { font-family: "Segoe UI", "DejaVu Sans", Arial, sans-serif
 span.fripa-interlinear { display: inline-flex !important; flex-direction: column !important; vertical-align: baseline !important; text-align: center !important; white-space: nowrap !important; line-height: 1.3 !important; }
 span.fripa-gloss { display: block !important; font: 400 0.58em/1.35 "Segoe UI", "DejaVu Sans", Arial, sans-serif !important; color: inherit !important; opacity: .8; text-decoration: none !important; white-space: normal !important; max-width: 16em; }
 span.fripa-translation { display: block !important; font: 400 0.85em/1.5 "Segoe UI", "DejaVu Sans", Arial, sans-serif !important; color: inherit !important; opacity: .85; padding: .3em 0 .65em !important; text-decoration: none !important; white-space: normal !important; }
+
+/* Keep combining nasal marks attached to their vowel, even on styled pages. */
+ruby.fripa-word > rt { text-align: center !important; text-align-last: center !important; text-indent: 0 !important; overflow: visible !important; }
+ruby.fripa-word > rt > span.fripa-pronunciation {
+  all: initial !important;
+  display: inline-block !important;
+  font-family: "DejaVu Sans", "Noto Sans", "Segoe UI", Arial, sans-serif !important;
+  font-size: inherit !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+  font-feature-settings: "mark" 1, "mkmk" 1 !important;
+  line-height: 1.5 !important;
+  letter-spacing: 0 !important;
+  word-spacing: 0 !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+  text-indent: 0 !important;
+  direction: ltr !important;
+  unicode-bidi: isolate !important;
+  color: inherit !important;
+  overflow: visible !important;
+  user-select: none !important;
+}
+
+/* A word and its IPA occupy one stack; English is always the next row. */
+span.fripa-interlinear > ruby.fripa-word {
+  display: inline-flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+span.fripa-interlinear > ruby.fripa-word > rt {
+  display: block !important;
+  order: -1 !important;
+}
+span.fripa-interlinear > ruby.fripa-word[data-fripa-position="below"] > rt {
+  order: 1 !important;
+}
+span.fripa-translation {
+  visibility: visible !important;
+  height: auto !important;
+  max-height: none !important;
+  text-align: start !important;
+  text-indent: 0 !important;
+}

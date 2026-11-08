@@ -1,6 +1,15 @@
 (() => {
   if (globalThis.FrenchIPA) return;
   const token = /\p{L}[\p{L}\p{M}]*(?:[’'][\p{L}\p{M}]+)*/gu;
+  // French pronunciations for loanwords missing from the bundled dictionary.
+  // Reference: https://fr.wiktionary.org/wiki/datacenter
+  const loanwords = new Map([
+    ['data', '/data/'],
+    ['center', '/sɛntœʁ/'],
+    ['centers', '/sɛntœʁ/'],
+    ['datacenter', '/datasɛntœʁ/'],
+    ['datacenters', '/datasɛntœʁ/'],
+  ]);
   const elisions = { l:'l', d:'d', j:'ʒ', t:'t', m:'m', n:'n', s:'s', c:'s', qu:'k', jusqu:'ʒysk', lorsqu:'lɔʁsk', puisqu:'pɥisk' };
   const normalize = word => word.normalize('NFC').toLocaleLowerCase('fr').replaceAll('’', "'");
   function parse(text) {
@@ -13,7 +22,8 @@
   }
   function lookup(word, dict) {
     const key = normalize(word);
-    if (dict.has(key)) return dict.get(key);
+    if (dict.has(key)) return dict.get(key).split(',')[0].trim();
+    if (loanwords.has(key)) return loanwords.get(key);
     const split = key.indexOf("'");
     if (split > 0 && Object.hasOwn(elisions, key.slice(0, split))) {
       const tail = lookup(key.slice(split + 1), dict);
@@ -34,7 +44,11 @@
       ruby.append(doc.createTextNode(match[0]));
       const rt = doc.createElement('rt');
       rt.setAttribute('aria-hidden', 'true');
-      rt.textContent = ipa.replaceAll('/', '');
+      // Keep the entire IPA run atomic so ruby justification cannot spread marks.
+      const pronunciation = doc.createElement('span');
+      pronunciation.className = 'fripa-pronunciation';
+      pronunciation.textContent = ipa.replaceAll('/', '').normalize('NFC');
+      rt.append(pronunciation);
       ruby.title = `${match[0]} ${ipa}`;
       ruby.append(rt);
       fragment.append(ruby);
